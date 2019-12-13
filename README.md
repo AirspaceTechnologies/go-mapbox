@@ -1,4 +1,4 @@
-# go-mapbox-api
+# go-mapbox
 
 API Wrapper for [Mapbox API](https://docs.mapbox.com/api/)
 
@@ -10,10 +10,10 @@ mapboxClient, err := NewClient(&MapboxConfig{
     Timeout: 30 * time.Second,
     APIKey:  "YOUR_API_KEY_HERE",
 })
-// error checking 
+// error checking ...  
 ```
 
-### Retrieve a matrix
+### Retrieve a Matrix
 ```go
 request := DirectionsMatrixRequest{
     Profile:       ProfileDrivingTraffic,
