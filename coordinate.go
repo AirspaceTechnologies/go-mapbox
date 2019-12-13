@@ -27,7 +27,7 @@ func (c Coordinates) WGS84Format() string {
 	var b strings.Builder
 	b.Grow(len(c) * 20) // 10(lat) + 10(lng)
 
-	for _,coordinate := range c {
+	for _, coordinate := range c {
 		fmt.Fprintf(&b, "%v;", coordinate.WGS84Format())
 	}
 

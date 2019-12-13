@@ -11,18 +11,20 @@ import (
 )
 
 const (
+	ResponseOK = "Ok"
+
 	baseUrl = "https://api.mapbox.com"
-	v1 = "v1"
+	v1      = "v1"
 )
 
 type MapboxConfig struct {
 	Timeout time.Duration
-	APIKey string
+	APIKey  string
 }
 
 type Client struct {
 	httpClient *http.Client
-	apiKey string
+	apiKey     string
 }
 
 // NewClient instantiates a new Mapbox client.
@@ -33,12 +35,12 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 	}
 
 	if config.APIKey == "" {
-		return &Client{}, fmt.Errorf("Missing Mapbox API key")
+		return nil, fmt.Errorf("Missing Mapbox API key")
 	}
 
 	return &Client{
 		httpClient: &http.Client{Timeout: config.Timeout},
-		apiKey: config.APIKey,
+		apiKey:     config.APIKey,
 	}, nil
 }
 
@@ -46,13 +48,19 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 
 type ErrorResponse struct {
 	Message string `json:"message"`
-	Code string `json:"code"`
+	Code    string `json:"code"`
 }
 
 type Waypoint struct {
 	Distance float64 `json:"distance"`
-	Name string `json:"name"`
+	Name     string  `json:"name"`
 	Location []float64
+}
+
+//////////////////////////////////////////////////////////////////
+
+func (c *Client) DirectionsMatrix(ctx context.Context, req *DirectionsMatrixRequest) (*DirectionsMatrixResponse, error) {
+	return directionsMatrix(ctx, c, req)
 }
 
 //////////////////////////////////////////////////////////////////
@@ -63,16 +71,16 @@ func (c *Client) get(ctx context.Context, relPath string, query url.Values) (*ht
 
 func (c *Client) do(ctx context.Context, httpVerb, relPath string, query url.Values) (*http.Response, error) {
 	// remove empty entries
-	for k,_ := range query {
+	for k, _ := range query {
 		if query.Get(k) == "" {
 			query.Del(k)
 		}
 	}
 
 	// safe to assume '?' as mapbox requires auth token as query param
-	url := fmt.Sprintf("%v/%v?%v", baseUrl, relPath, query.Encode())
+	uri := fmt.Sprintf("%v/%v?%v", baseUrl, relPath, query.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, httpVerb, url, nil)
+	req, err := http.NewRequestWithContext(ctx, httpVerb, uri, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +98,10 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 
 	body, err := ioutil.ReadAll(apiResponse.Body)
 	if err != nil {
-		return fmt.Errorf("Failed to read body. %v", err)
+		return fmt.Errorf("Failed to read body. %w", err)
 	}
 
-	// error handling
+	// check for errors from Mapbox API
 	if apiResponse.StatusCode == http.StatusUnprocessableEntity {
 		var errorResponse ErrorResponse
 		err := json.Unmarshal(body, &errorResponse)
@@ -104,11 +112,9 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 		return fmt.Errorf("API Error(%v):%v", apiResponse.StatusCode, errorResponse.Message)
 	}
 
-
 	//convert to response
-	e := json.Unmarshal(body, &response)
-	if e != nil {
-		return fmt.Errorf("Failed to read body. %v", e)
+	if err := json.Unmarshal(body, &response); err != nil {
+		return fmt.Errorf("Failed to read body. %w", err)
 	}
 
 	return nil

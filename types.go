@@ -3,27 +3,31 @@ package mapbox
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 const (
-	ProfileDriving = Profile("mapbox/driving")
-	ProfileWalking = Profile("mapbox/walking")
-	ProfileCycling = Profile("mapbox/cycling")
+	ProfileDriving        = Profile("mapbox/driving")
+	ProfileWalking        = Profile("mapbox/walking")
+	ProfileCycling        = Profile("mapbox/cycling")
 	ProfileDrivingTraffic = Profile("mapbox/driving-traffic")
 
-	AnnotationDuration = Annotation("duration")
-	AnnotationDistance = Annotation("distance")
-	AnnotationSpeed = Annotation("speed")
+	AnnotationDuration   = Annotation("duration")
+	AnnotationDistance   = Annotation("distance")
+	AnnotationSpeed      = Annotation("speed")
 	AnnotationCongestion = Annotation("congestion")
 
 	ApproachUnrestricted = Approach("unrestricted")
-	ApproachCurb = Approach("curb")
+	ApproachCurb         = Approach("curb")
 )
 
 type Profile string
 
+//////////////////////////////////////////////////////////////////
+
 type Annotations []Annotation
 type Annotation string
+
 func (a Annotations) strings() []string {
 	res := make([]string, 0, len(a))
 
@@ -34,8 +38,15 @@ func (a Annotations) strings() []string {
 	return res
 }
 
+func (a Annotations) query() string {
+	return strings.Join(a.strings(), ",")
+}
+
+//////////////////////////////////////////////////////////////////
+
 type Approaches []Approach
 type Approach string
+
 func (a Approaches) strings() []string {
 	res := make([]string, 0, len(a))
 
@@ -46,7 +57,14 @@ func (a Approaches) strings() []string {
 	return res
 }
 
+func (a Approaches) query() string {
+	return strings.Join(a.strings(), ";")
+}
+
+//////////////////////////////////////////////////////////////////
+
 type Sources []int
+
 func (s Sources) strings() []string {
 	res := make([]string, 0, len(s))
 
@@ -57,7 +75,14 @@ func (s Sources) strings() []string {
 	return res
 }
 
+func (s Sources) query() string {
+	return strings.Join(s.strings(), ";")
+}
+
+//////////////////////////////////////////////////////////////////
+
 type Destinations []int
+
 func (d Destinations) strings() []string {
 	res := make([]string, 0, len(d))
 
@@ -68,8 +93,15 @@ func (d Destinations) strings() []string {
 	return res
 }
 
+func (d Destinations) query() string {
+	return strings.Join(d.strings(), ";")
+}
+
+//////////////////////////////////////////////////////////////////
+
 type FallbackSpeed float64
-func (f FallbackSpeed) String() string {
+
+func (f FallbackSpeed) query() string {
 	if f == 0 {
 		return ""
 	}
