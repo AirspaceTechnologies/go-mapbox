@@ -15,6 +15,7 @@ const (
 
 	baseUrl = "https://api.mapbox.com"
 	v1      = "v1"
+	v5      = "v5"
 )
 
 type MapboxConfig struct {
@@ -35,7 +36,7 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 	}
 
 	if config.APIKey == "" {
-		return nil, fmt.Errorf("Missing Mapbox API key")
+		return nil, fmt.Errorf("missing Mapbox API key")
 	}
 
 	return &Client{
@@ -61,6 +62,14 @@ type Waypoint struct {
 
 func (c *Client) DirectionsMatrix(ctx context.Context, req *DirectionsMatrixRequest) (*DirectionsMatrixResponse, error) {
 	return directionsMatrix(ctx, c, req)
+}
+
+func (c *Client) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest) (*ReverseGeocodeResponse, error) {
+	return reverseGeocode(ctx, c, req)
+}
+
+func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest) (*ForwardGeocodeResponse, error) {
+	return forwardGeocode(ctx, c, req)
 }
 
 //////////////////////////////////////////////////////////////////
@@ -93,28 +102,28 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 
 	// auth checking
 	if apiResponse.StatusCode == http.StatusUnauthorized {
-		return fmt.Errorf("Unauthorized request. Provide Mapbox API key")
+		return fmt.Errorf("unauthorized request. Provide Mapbox API key")
 	}
 
 	body, err := ioutil.ReadAll(apiResponse.Body)
 	if err != nil {
-		return fmt.Errorf("Failed to read body. %w", err)
+		return fmt.Errorf("failed to read body. %w", err)
 	}
 
-	// check for errors from Mapbox API
-	if apiResponse.StatusCode == http.StatusUnprocessableEntity {
+	// check for errors from Mapbox API (non 200 response)
+	if apiResponse.StatusCode >= 400 && apiResponse.StatusCode <= 599 {
 		var errorResponse ErrorResponse
 		err := json.Unmarshal(body, &errorResponse)
 		if err != nil {
-			return fmt.Errorf("API Error(%v): no body", apiResponse.StatusCode)
+			return fmt.Errorf("api error(%v): no body", apiResponse.StatusCode)
 		}
 
-		return fmt.Errorf("API Error(%v):%v", apiResponse.StatusCode, errorResponse.Message)
+		return fmt.Errorf("api error(%v): %v", apiResponse.StatusCode, errorResponse.Message)
 	}
 
 	//convert to response
 	if err := json.Unmarshal(body, &response); err != nil {
-		return fmt.Errorf("Failed to read body. %w", err)
+		return fmt.Errorf("failed to read body. %w", err)
 	}
 
 	return nil
