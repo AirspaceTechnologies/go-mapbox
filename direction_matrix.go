@@ -24,11 +24,11 @@ type DirectionsMatrixRequest struct {
 }
 
 type DirectionsMatrixResponse struct {
-	Code         string      `json:"code"`
-	Durations    [][]float64 `json:"durations"`
-	Distances    [][]float64 `json:"distances"`
-	Destinations []Waypoint  `json:"destinations"`
-	Sources      []Waypoint  `json:"sources"`
+	Code         string       `json:"code"`
+	Durations    [][]*float64 `json:"durations"`
+	Distances    [][]*float64 `json:"distances"`
+	Destinations []Waypoint   `json:"destinations"`
+	Sources      []Waypoint   `json:"sources"`
 }
 
 // https://docs.mapbox.com/api/navigation/#matrix
