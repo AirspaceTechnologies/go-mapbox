@@ -66,7 +66,7 @@ type Feature struct {
 	ID                string      `json:"id"`
 	Type              string      `json:"type"`
 	PlaceType         []string    `json:"place_type"`
-	Relevance         int         `json:"relevance"`
+	Relevance         float64     `json:"relevance"`
 	Address           string      `json:"address,omitempty"`
 	Properties        *Properties `json:"properties,omitempty"`
 	Text              string      `json:"text"`
@@ -114,14 +114,26 @@ func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequ
 	query := url.Values{}
 	query.Set("access_token", client.apiKey)
 	query.Set("autocomplete", strconv.FormatBool(req.Autocomplete))
-	query.Set("bbox", req.BBox.query())
-	query.Set("country", req.Country)
-	query.Set("fuzzMatch", strconv.FormatBool(req.FuzzyMatch))
-	query.Set("language", req.Language)
-	query.Set("limit", strconv.Itoa(req.Limit))
-	query.Set("proximity", req.Proximity.WGS84Format())
+	if req.BBox.Min.Lat != 0 && req.BBox.Min.Lng != 0 {
+		query.Set("bbox", req.BBox.query())
+	}
+	if req.Country != "" {
+		query.Set("country", req.Country)
+	}
+	query.Set("fuzzyMatch", strconv.FormatBool(req.FuzzyMatch))
+	if req.Language != "" {
+		query.Set("language", req.Language)
+	}
+	if req.Limit != 0 {
+		query.Set("limit", strconv.Itoa(req.Limit))
+	}
+	if req.Proximity.Lat != 0 {
+		query.Set("proximity", req.Proximity.WGS84Format())
+	}
 	query.Set("routing", strconv.FormatBool(req.Routing))
-	query.Set("types", req.Types.query())
+	if len(req.Types) != 0 {
+		query.Set("types", req.Types.query())
+	}
 
 	apiResponse, err := client.get(ctx, relPath, query)
 	if err != nil {
