@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -23,9 +24,19 @@ type MapboxConfig struct {
 	APIKey  string
 }
 
+// RateLimit represents a set of operations that share a rate limit
+// see https://docs.mapbox.com/api/overview/#rate-limits
+type RateLimit string
+
+const (
+	Geocoding = "geocoding"
+	Matrix    = "matrix"
+)
+
 type Client struct {
 	httpClient *http.Client
 	apiKey     string
+	rateLimits map[RateLimit]time.Time
 }
 
 // NewClient instantiates a new Mapbox client.
@@ -61,14 +72,23 @@ type Waypoint struct {
 //////////////////////////////////////////////////////////////////
 
 func (c *Client) DirectionsMatrix(ctx context.Context, req *DirectionsMatrixRequest) (*DirectionsMatrixResponse, error) {
+	if err := c.checkRateLimit(Matrix); err != nil {
+		return nil, err
+	}
 	return directionsMatrix(ctx, c, req)
 }
 
 func (c *Client) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest) (*ReverseGeocodeResponse, error) {
+	if err := c.checkRateLimit(Geocoding); err != nil {
+		return nil, err
+	}
 	return reverseGeocode(ctx, c, req)
 }
 
 func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest) (*ForwardGeocodeResponse, error) {
+	if err := c.checkRateLimit(Geocoding); err != nil {
+		return nil, err
+	}
 	return forwardGeocode(ctx, c, req)
 }
 
@@ -97,7 +117,7 @@ func (c *Client) do(ctx context.Context, httpVerb, relPath string, query url.Val
 	return c.httpClient.Do(req)
 }
 
-func (c *Client) handleResponse(apiResponse *http.Response, response interface{}) error {
+func (c *Client) handleResponse(apiResponse *http.Response, response interface{}, rateLimit RateLimit) error {
 	defer apiResponse.Body.Close()
 
 	// auth checking
@@ -115,16 +135,38 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 		var errorResponse ErrorResponse
 		err := json.Unmarshal(body, &errorResponse)
 		if err != nil {
-			return fmt.Errorf("api error(%v): no body", apiResponse.StatusCode)
+			return NewMapboxError(apiResponse.StatusCode, "")
 		}
 
-		return fmt.Errorf("api error(%v): %v", apiResponse.StatusCode, errorResponse.Message)
+		// If rate limited, hold off till the next X-Rate-Limit-Reset
+		if apiResponse.StatusCode == 429 && errorResponse.Message == "Too Many Requests" {
+			resetUnix, err := strconv.Atoi(apiResponse.Header.Get("X-Rate-Limit-Reset"))
+			if err == nil {
+				c.rateLimits[rateLimit] = time.Unix(int64(resetUnix), 0)
+			}
+		}
+		return NewMapboxError(apiResponse.StatusCode, errorResponse.Message)
 	}
 
-	//convert to response
+	// convert to response
 	if err := json.Unmarshal(body, &response); err != nil {
 		return fmt.Errorf("failed to read body. %w", err)
 	}
 
 	return nil
+}
+
+func (c *Client) checkRateLimit(rl RateLimit) error {
+	reset := c.rateLimits[rl]
+	// No reset set
+	if reset.IsZero() {
+		return nil
+	}
+	// Reset reached
+	if reset.Before(time.Now()) {
+		c.rateLimits[rl] = time.Time{}
+		return nil
+	}
+	// Reset still in future
+	return NewMapboxError(429, fmt.Sprintf("Rate limiting %v requests", rl))
 }
