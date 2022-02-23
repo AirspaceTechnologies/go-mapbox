@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -144,9 +143,8 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 			return NewMapboxError(apiResponse.StatusCode, "")
 		}
 
-		log.Printf("Error! %v | %v", apiResponse.StatusCode, errorResponse.Message)
 		// If rate limited, hold off till the next X-Rate-Limit-Reset
-		if apiResponse.StatusCode == 429 && errorResponse.Message == "Too Many Requests" {
+		if apiResponse.StatusCode == 429 {
 			resetUnix, err := strconv.Atoi(apiResponse.Header.Get("X-Rate-Limit-Reset"))
 			if err == nil {
 				c.rateLimits[rateLimit] = time.Unix(int64(resetUnix), 0)
