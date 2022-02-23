@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -33,8 +34,12 @@ const (
 	Matrix    = "matrix"
 )
 
+type HTTPClient interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
 type Client struct {
-	httpClient *http.Client
+	httpClient HTTPClient
 	apiKey     string
 	rateLimits map[RateLimit]time.Time
 }
@@ -53,6 +58,7 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 	return &Client{
 		httpClient: &http.Client{Timeout: config.Timeout},
 		apiKey:     config.APIKey,
+		rateLimits: make(map[RateLimit]time.Time),
 	}, nil
 }
 
@@ -100,7 +106,7 @@ func (c *Client) get(ctx context.Context, relPath string, query url.Values) (*ht
 
 func (c *Client) do(ctx context.Context, httpVerb, relPath string, query url.Values) (*http.Response, error) {
 	// remove empty entries
-	for k, _ := range query {
+	for k := range query {
 		if query.Get(k) == "" {
 			query.Del(k)
 		}
@@ -138,6 +144,7 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 			return NewMapboxError(apiResponse.StatusCode, "")
 		}
 
+		log.Printf("Error! %v | %v", apiResponse.StatusCode, errorResponse.Message)
 		// If rate limited, hold off till the next X-Rate-Limit-Reset
 		if apiResponse.StatusCode == 429 && errorResponse.Message == "Too Many Requests" {
 			resetUnix, err := strconv.Atoi(apiResponse.Header.Get("X-Rate-Limit-Reset"))
