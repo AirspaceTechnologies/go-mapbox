@@ -149,8 +149,8 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 		if apiResponse.StatusCode == 429 {
 			resetUnix, err := strconv.Atoi(apiResponse.Header.Get("X-Rate-Limit-Reset"))
 			if err == nil {
-				// c.rateLimitMutex.Lock()
-				// defer c.rateLimitMutex.Unlock()
+				c.rateLimitMutex.Lock()
+				defer c.rateLimitMutex.Unlock()
 				c.rateLimits[rateLimit] = time.Unix(int64(resetUnix), 0)
 			}
 		}
