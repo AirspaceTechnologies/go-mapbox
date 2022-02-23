@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -38,9 +39,10 @@ type HTTPClient interface {
 }
 
 type Client struct {
-	httpClient HTTPClient
-	apiKey     string
-	rateLimits map[RateLimit]time.Time
+	httpClient     HTTPClient
+	apiKey         string
+	rateLimits     map[RateLimit]time.Time
+	rateLimitMutex sync.RWMutex
 }
 
 // NewClient instantiates a new Mapbox client.
@@ -147,6 +149,8 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 		if apiResponse.StatusCode == 429 {
 			resetUnix, err := strconv.Atoi(apiResponse.Header.Get("X-Rate-Limit-Reset"))
 			if err == nil {
+				// c.rateLimitMutex.Lock()
+				// defer c.rateLimitMutex.Unlock()
 				c.rateLimits[rateLimit] = time.Unix(int64(resetUnix), 0)
 			}
 		}
@@ -161,14 +165,24 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 	return nil
 }
 
+func (c *Client) rateLimit(rl RateLimit) time.Time {
+	c.rateLimitMutex.RLock()
+	defer c.rateLimitMutex.RUnlock()
+	return c.rateLimits[rl]
+}
+
 func (c *Client) checkRateLimit(rl RateLimit) error {
-	reset := c.rateLimits[rl]
+	reset := c.rateLimit(rl)
+
 	// No reset set
 	if reset.IsZero() {
 		return nil
 	}
 	// Reset reached
 	if reset.Before(time.Now()) {
+		c.rateLimitMutex.Lock()
+		defer c.rateLimitMutex.Unlock()
+
 		c.rateLimits[rl] = time.Time{}
 		return nil
 	}

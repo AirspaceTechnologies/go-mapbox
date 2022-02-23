@@ -7,9 +7,58 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 )
+
+func TestClient_raceCondition(t *testing.T) {
+
+	c, _ := NewClient(&MapboxConfig{
+		APIKey: "test",
+	})
+	rlc := &rateLimitingClient{}
+	c.httpClient = rlc
+
+	req := ReverseGeocodeRequest{
+		Endpoint: EndpointPlaces,
+		Coordinates: Coordinates{
+			Coordinate{
+				Lat: 123.1,
+				Lng: 123.2,
+			},
+		},
+
+		Language: "en",
+		Limit:    1,
+	}
+
+	// Set limit, then run requests asynchronously until the limit is reset
+	n := 50
+	var wg sync.WaitGroup
+	wg.Add(n * 2)
+
+	rlc.rateLimiting = true
+	c.ReverseGeocode(context.Background(), &req)
+	rlc.rateLimiting = false
+
+	go func() {
+		for i := 0; i < n; i++ {
+			time.Sleep(50 * time.Millisecond)
+			c.ReverseGeocode(context.Background(), &req)
+			wg.Done()
+		}
+	}()
+	go func() {
+		for i := 0; i < n; i++ {
+			time.Sleep(50 * time.Millisecond)
+			c.ReverseGeocode(context.Background(), &req)
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
+}
 
 func TestClient_rateLimits(t *testing.T) {
 	c, _ := NewClient(&MapboxConfig{
@@ -61,7 +110,7 @@ func TestClient_rateLimits(t *testing.T) {
 	}
 
 	// After reset, should be good to go again
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 	rlc.rateLimiting = false
 	_, err = c.ReverseGeocode(
 		context.Background(),
@@ -94,7 +143,7 @@ func (rlc *rateLimitingClient) Do(req *http.Request) (*http.Response, error) {
 	resJson, _ := json.Marshal(rateLimitErr)
 
 	headers := http.Header{}
-	headers.Add("X-Rate-Limit-Reset", fmt.Sprintf("%v", time.Now().Add(2*time.Second).Unix()))
+	headers.Add("X-Rate-Limit-Reset", fmt.Sprintf("%v", time.Now().Add(1*time.Second).Unix()))
 
 	return &http.Response{
 		StatusCode: 429,
