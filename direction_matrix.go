@@ -49,7 +49,7 @@ func directionsMatrix(ctx context.Context, client *Client, req *DirectionsMatrix
 	}
 
 	var response DirectionsMatrixResponse
-	if err := client.handleResponse(apiResponse, &response); err != nil {
+	if err := client.handleResponse(apiResponse, &response, Matrix); err != nil {
 		return nil, err
 	}
 
