@@ -94,7 +94,7 @@ type Properties struct {
 type Geometry struct {
 	Coordinates  []float64 `json:"coordinates"`
 	Type         string    `json:"type"`
-	Interpolated string    `json:"interpolated,omitempty"`
+	Interpolated bool      `json:"interpolated,omitempty"`
 	Omitted      string    `json:"omitted,omitempty"`
 }
 
