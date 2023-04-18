@@ -2,13 +2,12 @@ package mapbox
 
 import (
 	"context"
-	"net/http"
 	"testing"
 )
 
 func checkforwardGeocodeRequestURL(t *testing.T, req *ForwardGeocodeRequest, expectedURL string) {
 	t.Helper()
-	client, requests := mockClient(&http.Response{StatusCode: 200})
+	client, requests := mockClient()
 	go client.ForwardGeocode(context.Background(), req)
 
 	httpReq := <-requests

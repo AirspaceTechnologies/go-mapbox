@@ -31,9 +31,6 @@ func mockClient(responses ...*http.Response) (*Client, chan *http.Request) {
 				}
 				resp := responses[i]
 				i++
-				if i > len(responses) {
-					close(ch)
-				}
 				return resp, nil
 			}),
 		},
