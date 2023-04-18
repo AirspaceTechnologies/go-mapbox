@@ -109,7 +109,7 @@ type Context struct {
 
 // https://docs.mapbox.com/api/search/#forward-geocoding
 func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequest) (*ForwardGeocodeResponse, error) {
-	relPath := fmt.Sprintf("%v/%v/%v/%v.json", geocodePath, v5, req.Endpoint, req.SearchText)
+	relPath := fmt.Sprintf("%v/%v/%v/%v.json", geocodePath, v5, req.Endpoint, url.PathEscape(req.SearchText))
 
 	query := url.Values{}
 	query.Set("access_token", client.apiKey)
