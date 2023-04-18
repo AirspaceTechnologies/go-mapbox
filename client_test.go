@@ -26,7 +26,7 @@ func mockClient(responses ...*http.Response) (*Client, chan *http.Request) {
 		httpClient: &http.Client{
 			Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 				ch <- r
-				if i > len(responses) {
+				if i >= len(responses) {
 					return nil, errors.New("mockClient: not enough responses")
 				}
 				resp := responses[i]
