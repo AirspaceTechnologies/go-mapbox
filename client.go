@@ -39,8 +39,10 @@ type HTTPClient interface {
 }
 
 type Client struct {
-	httpClient     HTTPClient
-	apiKey         string
+	httpClient HTTPClient
+	apiKey     string
+	// Referer is needed when URL restrictions are enforced, see https://docs.mapbox.com/accounts/guides/tokens/#url-restrictions
+	Referer        string
 	rateLimits     map[RateLimit]time.Time
 	rateLimitMutex sync.RWMutex
 }
@@ -119,6 +121,9 @@ func (c *Client) do(ctx context.Context, httpVerb, relPath string, query url.Val
 	req, err := http.NewRequestWithContext(ctx, httpVerb, uri, nil)
 	if err != nil {
 		return nil, err
+	}
+	if c.Referer != "" {
+		req.Header.Set("Referer", c.Referer)
 	}
 
 	return c.httpClient.Do(req)

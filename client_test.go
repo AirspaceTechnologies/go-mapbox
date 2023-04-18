@@ -149,6 +149,20 @@ func TestClient_rateLimits(t *testing.T) {
 	}
 }
 
+func TestClientReferer(t *testing.T) {
+	expectedReferer := "https://example.com/"
+
+	client, requests := mockClient()
+	client.Referer = expectedReferer
+	go client.do(context.Background(), "GET", "/", nil)
+
+	httpReq := <-requests
+	actualReferer := httpReq.Referer()
+	if expectedReferer != actualReferer {
+		t.Errorf("expected referer: %q, got: %q", expectedReferer, actualReferer)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 type rateLimitingClient struct {
