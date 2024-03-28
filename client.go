@@ -62,9 +62,13 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 		return nil, fmt.Errorf("missing Mapbox API key")
 	}
 
-	httpClient := &http.Client{Timeout: config.Timeout}
+	httpClient := &http.Client{}
 	if config.HTTPClient != nil {
 		httpClient = config.HTTPClient
+	}
+
+	if config.Timeout > 0 && httpClient.Timeout == 0 {
+		httpClient.Timeout = config.Timeout
 	}
 
 	return &Client{
