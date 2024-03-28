@@ -26,7 +26,7 @@ type MapboxConfig struct {
 
 	// Optional http.Client can be defined in config if specific options are needed
 	// If not provided will default to the stdlib http.Client
-	HTTPClient *http.Client
+	Client HTTPClient
 }
 
 // RateLimit represents a set of operations that share a rate limit
@@ -62,13 +62,11 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 		return nil, fmt.Errorf("missing Mapbox API key")
 	}
 
-	httpClient := &http.Client{}
-	if config.HTTPClient != nil {
-		httpClient = config.HTTPClient
-	}
-
-	if config.Timeout > 0 && httpClient.Timeout == 0 {
-		httpClient.Timeout = config.Timeout
+	var httpClient HTTPClient
+	if config.Client != nil {
+		httpClient = config.Client
+	} else {
+		httpClient = &http.Client{Timeout: config.Timeout}
 	}
 
 	return &Client{
