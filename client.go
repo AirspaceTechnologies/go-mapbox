@@ -23,6 +23,10 @@ const (
 type MapboxConfig struct {
 	Timeout time.Duration
 	APIKey  string
+
+	// Optional http.Client can be defined in config if specific options are needed
+	// If not provided will default to the stdlib http.Client
+	HTTPClient *http.Client
 }
 
 // RateLimit represents a set of operations that share a rate limit
@@ -58,8 +62,13 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 		return nil, fmt.Errorf("missing Mapbox API key")
 	}
 
+	httpClient := &http.Client{Timeout: config.Timeout}
+	if config.HTTPClient != nil {
+		httpClient = config.HTTPClient
+	}
+
 	return &Client{
-		httpClient: &http.Client{Timeout: config.Timeout},
+		httpClient: httpClient,
 		apiKey:     config.APIKey,
 		rateLimits: make(map[RateLimit]time.Time),
 	}, nil
