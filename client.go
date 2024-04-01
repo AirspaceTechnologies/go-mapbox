@@ -101,6 +101,13 @@ func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest)
 	return forwardGeocode(ctx, c, req)
 }
 
+func (c *Client) Directions(ctx context.Context, req *DirectionsRequest) (*DirectionsResponse, error) {
+	if err := c.checkRateLimit(Matrix); err != nil {
+		return nil, err
+	}
+	return directions(ctx, c, req)
+}
+
 //////////////////////////////////////////////////////////////////
 
 func (c *Client) get(ctx context.Context, relPath string, query url.Values) (*http.Response, error) {
