@@ -23,6 +23,10 @@ const (
 type MapboxConfig struct {
 	Timeout time.Duration
 	APIKey  string
+
+	// Optional http.Client can be defined in config if specific options are needed
+	// If not provided will default to the stdlib http.Client
+	Client HTTPClient
 }
 
 // RateLimit represents a set of operations that share a rate limit
@@ -30,8 +34,9 @@ type MapboxConfig struct {
 type RateLimit string
 
 const (
-	Geocoding = "geocoding"
-	Matrix    = "matrix"
+	GeocodingRateLimit  = "geocoding"
+	MatrixRateLimit     = "matrix"
+	DirectionsRateLimit = "directions"
 )
 
 type HTTPClient interface {
@@ -58,8 +63,15 @@ func NewClient(config *MapboxConfig) (*Client, error) {
 		return nil, fmt.Errorf("missing Mapbox API key")
 	}
 
+	var httpClient HTTPClient
+	if config.Client != nil {
+		httpClient = config.Client
+	} else {
+		httpClient = &http.Client{Timeout: config.Timeout}
+	}
+
 	return &Client{
-		httpClient: &http.Client{Timeout: config.Timeout},
+		httpClient: httpClient,
 		apiKey:     config.APIKey,
 		rateLimits: make(map[RateLimit]time.Time),
 	}, nil
@@ -81,28 +93,28 @@ type Waypoint struct {
 //////////////////////////////////////////////////////////////////
 
 func (c *Client) DirectionsMatrix(ctx context.Context, req *DirectionsMatrixRequest) (*DirectionsMatrixResponse, error) {
-	if err := c.checkRateLimit(Matrix); err != nil {
+	if err := c.checkRateLimit(MatrixRateLimit); err != nil {
 		return nil, err
 	}
 	return directionsMatrix(ctx, c, req)
 }
 
 func (c *Client) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest) (*ReverseGeocodeResponse, error) {
-	if err := c.checkRateLimit(Geocoding); err != nil {
+	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 	return reverseGeocode(ctx, c, req)
 }
 
 func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest) (*ForwardGeocodeResponse, error) {
-	if err := c.checkRateLimit(Geocoding); err != nil {
+	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 	return forwardGeocode(ctx, c, req)
 }
 
 func (c *Client) Directions(ctx context.Context, req *DirectionsRequest) (*DirectionsResponse, error) {
-	if err := c.checkRateLimit(Matrix); err != nil {
+	if err := c.checkRateLimit(DirectionsRateLimit); err != nil {
 		return nil, err
 	}
 	return directions(ctx, c, req)

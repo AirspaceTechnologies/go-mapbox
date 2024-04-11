@@ -310,3 +310,22 @@ func (t ArriveBy) query() string {
 	}
 	return time.Time(t).UTC().Format(ArriveByFormat)
 }
+
+type DepartureTime time.Time
+
+const (
+	DepartureTimeFormat = "2006-01-02T15:04:05Z"
+)
+
+func (t DepartureTime) IsZero() bool {
+	return time.Time(t).IsZero()
+}
+
+func (t DepartureTime) query() string {
+	if t.IsZero() {
+		return ""
+	}
+	return time.Time(t).UTC().Format(DepartureTimeFormat)
+}
+
+//////////////////////////////////////////////////////////////////
