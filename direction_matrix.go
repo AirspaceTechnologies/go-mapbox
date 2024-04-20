@@ -21,6 +21,7 @@ type DirectionsMatrixRequest struct {
 	Destinations  Destinations
 	Sources       Sources
 	FallbackSpeed FallbackSpeed
+	DepartureTime DepartureTime
 }
 
 type DirectionsMatrixResponse struct {
@@ -42,6 +43,10 @@ func directionsMatrix(ctx context.Context, client *Client, req *DirectionsMatrix
 	query.Set("destinations", req.Destinations.query())
 	query.Set("sources", req.Sources.query())
 	query.Set("fallback_speed", req.FallbackSpeed.query())
+
+	if !req.DepartureTime.IsZero() {
+		query.Set("depart_at", req.DepartureTime.query())
+	}
 
 	apiResponse, err := client.get(ctx, relPath, query)
 	if err != nil {

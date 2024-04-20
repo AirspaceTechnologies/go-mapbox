@@ -28,6 +28,7 @@ request := &mapbox.DirectionsMatrixRequest{
     Approaches: mapbox.Approaches{mapbox.ApproachUnrestricted},
     Sources: mapbox.Sources{0},
     FallbackSpeed: 60,
+    DepartureTime: mapbox.DepartureTime(time.Now()),
 }
 
 response, err := mapboxClient.DirectionsMatrix(context.TODO(), request)
