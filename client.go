@@ -34,8 +34,9 @@ type MapboxConfig struct {
 type RateLimit string
 
 const (
-	Geocoding = "geocoding"
-	Matrix    = "matrix"
+	GeocodingRateLimit  = "geocoding"
+	MatrixRateLimit     = "matrix"
+	DirectionsRateLimit = "directions"
 )
 
 type HTTPClient interface {
@@ -92,28 +93,28 @@ type Waypoint struct {
 //////////////////////////////////////////////////////////////////
 
 func (c *Client) DirectionsMatrix(ctx context.Context, req *DirectionsMatrixRequest) (*DirectionsMatrixResponse, error) {
-	if err := c.checkRateLimit(Matrix); err != nil {
+	if err := c.checkRateLimit(MatrixRateLimit); err != nil {
 		return nil, err
 	}
 	return directionsMatrix(ctx, c, req)
 }
 
 func (c *Client) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest) (*ReverseGeocodeResponse, error) {
-	if err := c.checkRateLimit(Geocoding); err != nil {
+	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 	return reverseGeocode(ctx, c, req)
 }
 
 func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest) (*ForwardGeocodeResponse, error) {
-	if err := c.checkRateLimit(Geocoding); err != nil {
+	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 	return forwardGeocode(ctx, c, req)
 }
 
 func (c *Client) Directions(ctx context.Context, req *DirectionsRequest) (*DirectionsResponse, error) {
-	if err := c.checkRateLimit(Matrix); err != nil {
+	if err := c.checkRateLimit(DirectionsRateLimit); err != nil {
 		return nil, err
 	}
 	return directions(ctx, c, req)

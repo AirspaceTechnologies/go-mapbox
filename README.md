@@ -101,3 +101,4 @@ request := &mapbox.DirectionsRequest{
 response, err := mapboxClient.Directions(context.TODO(), request)
 // error checking ...
 ```
+

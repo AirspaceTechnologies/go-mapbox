@@ -179,6 +179,7 @@ func (t Types) query() string {
 }
 
 //////////////////////////////////////////////////////////////////
+
 type Excludes []Exclude
 type Exclude string
 

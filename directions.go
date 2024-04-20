@@ -184,7 +184,7 @@ func directions(ctx context.Context, client *Client, req *DirectionsRequest) (*D
 	}
 
 	var response DirectionsResponse
-	if err := client.handleResponse(apiResponse, &response, Matrix); err != nil {
+	if err := client.handleResponse(apiResponse, &response, DirectionsRateLimit); err != nil {
 		return nil, err
 	}
 

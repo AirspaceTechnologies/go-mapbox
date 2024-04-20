@@ -141,7 +141,7 @@ func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequ
 	}
 
 	var response ForwardGeocodeResponse
-	if err := client.handleResponse(apiResponse, &response, Geocoding); err != nil {
+	if err := client.handleResponse(apiResponse, &response, GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 
@@ -167,7 +167,7 @@ func reverseGeocode(ctx context.Context, client *Client, req *ReverseGeocodeRequ
 	}
 
 	var response ReverseGeocodeResponse
-	if err := client.handleResponse(apiResponse, &response, Geocoding); err != nil {
+	if err := client.handleResponse(apiResponse, &response, GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 
