@@ -54,7 +54,7 @@ func directionsMatrix(ctx context.Context, client *Client, req *DirectionsMatrix
 	}
 
 	var response DirectionsMatrixResponse
-	if err := client.handleResponse(apiResponse, &response, Matrix); err != nil {
+	if err := client.handleResponse(apiResponse, &response, MatrixRateLimit); err != nil {
 		return nil, err
 	}
 

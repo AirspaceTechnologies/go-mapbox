@@ -36,10 +36,34 @@ const (
 	TypeNeighborhood = Type("neighborhood")
 	TypeAddress      = Type("address")
 	TypePOI          = Type("poi")
+
+	ExcludeMotorway      = Exclude("motorway")
+	ExcludeToll          = Exclude("toll")
+	ExcludeFerry         = Exclude("ferry")
+	ExcludeUnpaved       = Exclude("unpaved")
+	ExcludeCashOnlyTolls = Exclude("cash_only_tolls")
+
+	GeometriesGeoJSON   = Geometries("geojson")
+	GeometriesPolyline  = Geometries("polyline")
+	GeometriesPolyline6 = Geometries("polyline6")
+
+	IncludeHov2 = Include("hov2")
+	IncludeHov3 = Include("hov3")
+	IncludeHot  = Include("hot")
+
+	OverviewFull       = Overview("full")
+	OverviewSimplified = Overview("simplified")
+	OverviewFalse      = Overview("false")
+
+	VoiceUnitsImpreial = VoiceUnits("imperial")
+	VoiceUnitsMetric   = VoiceUnits("metric")
 )
 
 type Profile string
 type Endpoint string
+type Geometries string
+type Overview string
+type VoiceUnits string
 
 //////////////////////////////////////////////////////////////////
 
@@ -152,6 +176,139 @@ func (t Types) strings() []string {
 
 func (t Types) query() string {
 	return strings.Join(t.strings(), ",")
+}
+
+//////////////////////////////////////////////////////////////////
+
+type Excludes []Exclude
+type Exclude string
+
+func (e Excludes) strings() []string {
+	res := make([]string, 0, len(e))
+
+	for _, val := range e {
+		res = append(res, string(val))
+	}
+
+	return res
+}
+
+func (e Excludes) query() string {
+	return strings.Join(e.strings(), ",")
+}
+
+//////////////////////////////////////////////////////////////////
+
+type Includes []Include
+type Include string
+
+func (i Includes) strings() []string {
+	res := make([]string, 0, len(i))
+
+	for _, val := range i {
+		res = append(res, string(val))
+	}
+
+	return res
+}
+
+func (i Includes) query() string {
+	return strings.Join(i.strings(), ",")
+}
+
+//////////////////////////////////////////////////////////////////
+
+type DirectionWaypoints []DirectionWaypoint
+type DirectionWaypoint string
+
+func (d DirectionWaypoints) strings() []string {
+	res := make([]string, 0, len(d))
+
+	for _, val := range d {
+		res = append(res, string(val))
+	}
+
+	return res
+}
+
+func (d DirectionWaypoints) query() string {
+	return strings.Join(d.strings(), ";")
+}
+
+//////////////////////////////////////////////////////////////////
+
+type WaypointNames []WaypointName
+type WaypointName string
+
+func (w WaypointNames) strings() []string {
+	res := make([]string, 0, len(w))
+
+	for _, val := range w {
+		res = append(res, string(val))
+	}
+
+	return res
+}
+
+func (w WaypointNames) query() string {
+	return strings.Join(w.strings(), ";")
+}
+
+//////////////////////////////////////////////////////////////////
+
+type WaypointTargets []WaypointTarget
+type WaypointTarget string
+
+func (w WaypointTargets) strings() []string {
+	res := make([]string, 0, len(w))
+
+	for _, val := range w {
+		res = append(res, string(val))
+	}
+
+	return res
+}
+
+func (w WaypointTargets) query() string {
+	return strings.Join(w.strings(), ";")
+}
+
+//////////////////////////////////////////////////////////////////
+
+type DepartAt time.Time
+
+const (
+	DepartAtFormat = "2006-01-02T15:04:05Z"
+)
+
+func (t DepartAt) IsZero() bool {
+	return time.Time(t).IsZero()
+}
+
+func (t DepartAt) query() string {
+	if t.IsZero() {
+		return ""
+	}
+	return time.Time(t).UTC().Format(DepartAtFormat)
+}
+
+//////////////////////////////////////////////////////////////////
+
+type ArriveBy time.Time
+
+const (
+	ArriveByFormat = "2006-01-02T15:04:05Z"
+)
+
+func (t ArriveBy) IsZero() bool {
+	return time.Time(t).IsZero()
+}
+
+func (t ArriveBy) query() string {
+	if t.IsZero() {
+		return ""
+	}
+	return time.Time(t).UTC().Format(ArriveByFormat)
 }
 
 //////////////////////////////////////////////////////////////////

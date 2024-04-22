@@ -84,3 +84,21 @@ request := &mapbox.ReverseGeocodeRequest{
 response, err := mapboxClient.ReverseGeocode(context.TODO(), request)
 // error checking ... 
 ```
+
+### Retrieve Directions
+```go
+request := &mapbox.DirectionsRequest{
+    Profile:       mapbox.ProfileDrivingTraffic,
+    Coordinates:   mapbox.Coordinates{
+        mapbox.Coordinate{Lat: 33.122508, Lng: -117.306786},
+        mapbox.Coordinate{Lat: 32.733810, Lng: -117.193443},
+    },
+
+    // optional fields below
+    Annotations: mapbox.Annotations{mapbox.AnnotationDistance, mapbox.AnnotationDuration},
+}
+
+response, err := mapboxClient.Directions(context.TODO(), request)
+// error checking ...
+```
+
