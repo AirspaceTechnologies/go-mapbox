@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -37,6 +37,7 @@ const (
 	GeocodingRateLimit  = "geocoding"
 	MatrixRateLimit     = "matrix"
 	DirectionsRateLimit = "directions"
+	SearchboxRateLimit  = "searchbox"
 )
 
 type HTTPClient interface {
@@ -99,14 +100,21 @@ func (c *Client) DirectionsMatrix(ctx context.Context, req *DirectionsMatrixRequ
 	return directionsMatrix(ctx, c, req)
 }
 
-func (c *Client) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest) (*ReverseGeocodeResponse, error) {
+func (c *Client) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest) (*GeocodeResponse, error) {
 	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 	return reverseGeocode(ctx, c, req)
 }
 
-func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest) (*ForwardGeocodeResponse, error) {
+func (c *Client) ReverseGeocodeBatch(ctx context.Context, req ReverseGeocodeBatchRequest) (*GeocodeBatchResponse, error) {
+	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
+		return nil, err
+	}
+	return reverseGeocodeBatch(ctx, c, req)
+}
+
+func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest) (*GeocodeResponse, error) {
 	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
 		return nil, err
 	}
@@ -120,13 +128,24 @@ func (c *Client) Directions(ctx context.Context, req *DirectionsRequest) (*Direc
 	return directions(ctx, c, req)
 }
 
+func (c *Client) SearchboxReverse(ctx context.Context, req *SearchboxReverseRequest) (*SearchboxReverseResponse, error) {
+	if err := c.checkRateLimit(SearchboxRateLimit); err != nil {
+		return nil, err
+	}
+	return searchboxReverse(ctx, c, req)
+}
+
 //////////////////////////////////////////////////////////////////
 
 func (c *Client) get(ctx context.Context, relPath string, query url.Values) (*http.Response, error) {
-	return c.do(ctx, http.MethodGet, relPath, query)
+	return c.do(ctx, http.MethodGet, relPath, query, nil)
 }
 
-func (c *Client) do(ctx context.Context, httpVerb, relPath string, query url.Values) (*http.Response, error) {
+func (c *Client) post(ctx context.Context, relPath string, query url.Values, body io.Reader) (*http.Response, error) {
+	return c.do(ctx, http.MethodPost, relPath, query, body)
+}
+
+func (c *Client) do(ctx context.Context, httpVerb, relPath string, query url.Values, body io.Reader) (*http.Response, error) {
 	// remove empty entries
 	for k := range query {
 		if query.Get(k) == "" {
@@ -134,10 +153,16 @@ func (c *Client) do(ctx context.Context, httpVerb, relPath string, query url.Val
 		}
 	}
 
-	// safe to assume '?' as mapbox requires auth token as query param
-	uri := fmt.Sprintf("%v/%v?%v", baseUrl, relPath, query.Encode())
+	uri, err := url.JoinPath(baseUrl, relPath)
+	if err != nil {
+		return nil, err
+	}
 
-	req, err := http.NewRequestWithContext(ctx, httpVerb, uri, nil)
+	if len(query) > 0 {
+		uri = fmt.Sprintf("%v?%v", uri, query.Encode())
+	}
+
+	req, err := http.NewRequestWithContext(ctx, httpVerb, uri, body)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +181,7 @@ func (c *Client) handleResponse(apiResponse *http.Response, response interface{}
 		return fmt.Errorf("unauthorized request. Provide Mapbox API key")
 	}
 
-	body, err := ioutil.ReadAll(apiResponse.Body)
+	body, err := io.ReadAll(apiResponse.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read body. %w", err)
 	}

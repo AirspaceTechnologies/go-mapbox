@@ -19,7 +19,6 @@ func checkforwardGeocodeRequestURL(t *testing.T, req *ForwardGeocodeRequest, exp
 
 func TestForwardGeocodeURLEncoding(t *testing.T) {
 	checkforwardGeocodeRequestURL(t, &ForwardGeocodeRequest{
-		Endpoint:   EndpointPlaces,
 		SearchText: "query with special chars:/; ",
-	}, `/geocoding/v5/mapbox.places/query%20with%20special%20chars:%2F%3B%20.json?autocomplete=false&fuzzyMatch=false&routing=false`)
+	}, `/search/geocode/v6/forward?autocomplete=false&q=query+with+special+chars%3A%2F%3B+`)
 }

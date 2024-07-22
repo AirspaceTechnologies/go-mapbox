@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -49,14 +50,10 @@ func TestClient_raceCondition(t *testing.T) {
 	c.httpClient = rlc
 
 	req := ReverseGeocodeRequest{
-		Endpoint: EndpointPlaces,
-		Coordinates: Coordinates{
-			Coordinate{
-				Lat: 123.1,
-				Lng: 123.2,
-			},
+		Coordinate: Coordinate{
+			Lat: 123.1,
+			Lng: 123.2,
 		},
-
 		Language: "en",
 		Limit:    1,
 	}
@@ -96,14 +93,10 @@ func TestClient_rateLimits(t *testing.T) {
 	c.httpClient = rlc
 
 	req := ReverseGeocodeRequest{
-		Endpoint: EndpointPlaces,
-		Coordinates: Coordinates{
-			Coordinate{
-				Lat: 123.1,
-				Lng: 123.2,
-			},
+		Coordinate: Coordinate{
+			Lat: 123.1,
+			Lng: 123.2,
 		},
-
 		Language: "en",
 		Limit:    1,
 	}
@@ -154,7 +147,7 @@ func TestClientReferer(t *testing.T) {
 
 	client, requests := mockClient()
 	client.Referer = expectedReferer
-	go client.do(context.Background(), "GET", "/", nil)
+	go client.do(context.Background(), "GET", "/", url.Values{}, nil)
 
 	httpReq := <-requests
 	actualReferer := httpReq.Referer()
@@ -167,14 +160,14 @@ func TestClientReferer(t *testing.T) {
 
 type rateLimitingClient struct {
 	rateLimiting bool
-	reset        time.Time
+	reset        time.Time //nolint:unused
 }
 
 func (rlc *rateLimitingClient) Do(req *http.Request) (*http.Response, error) {
 	if !rlc.rateLimiting {
 		return &http.Response{
 			StatusCode: 200,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("{}")),
+			Body:       io.NopCloser(bytes.NewBufferString("{}")),
 		}, nil
 	}
 
@@ -189,7 +182,7 @@ func (rlc *rateLimitingClient) Do(req *http.Request) (*http.Response, error) {
 
 	return &http.Response{
 		StatusCode: 429,
-		Body: ioutil.NopCloser(
+		Body: io.NopCloser(
 			bytes.NewBuffer(resJson),
 		),
 		Header: headers,

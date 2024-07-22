@@ -13,9 +13,6 @@ const (
 	ProfileCycling        = Profile("mapbox/cycling")
 	ProfileDrivingTraffic = Profile("mapbox/driving-traffic")
 
-	EndpointPlaces          = Endpoint("mapbox.places")
-	EndpointPlacesPermanent = Endpoint("mapbox.places-permanent")
-
 	AnnotationDuration   = Annotation("duration")
 	AnnotationDistance   = Annotation("distance")
 	AnnotationSpeed      = Annotation("speed")
@@ -24,18 +21,19 @@ const (
 	ApproachUnrestricted = Approach("unrestricted")
 	ApproachCurb         = Approach("curb")
 
-	ReverseModeDistance = ReverseMode("distance")
-	ReverseModeScore    = ReverseMode("score")
-
-	TypeCountry      = Type("country")
-	TypeRegion       = Type("region")
-	TypePostcode     = Type("postcode")
-	TypeDistrict     = Type("district")
-	TypePlace        = Type("place")
-	TypeLocality     = Type("locality")
-	TypeNeighborhood = Type("neighborhood")
-	TypeAddress      = Type("address")
-	TypePOI          = Type("poi")
+	TypeCountry          = Type("country")
+	TypeRegion           = Type("region")
+	TypePostcode         = Type("postcode")
+	TypeDistrict         = Type("district")
+	TypePlace            = Type("place")
+	TypeLocality         = Type("locality")
+	TypeNeighborhood     = Type("neighborhood")
+	TypeStreet           = Type("street")
+	TypeBlock            = Type("block")
+	TypeAddress          = Type("address")
+	TypeSecondaryAddress = Type("secondary_address")
+	TypePOI              = Type("poi")
+	TypePOILandmark      = Type("poi.landmark")
 
 	ExcludeMotorway      = Exclude("motorway")
 	ExcludeToll          = Exclude("toll")
@@ -149,14 +147,6 @@ func (f FallbackSpeed) query() string {
 	}
 
 	return fmt.Sprintf("%f", f)
-}
-
-//////////////////////////////////////////////////////////////////
-
-type ReverseMode string
-
-func (r ReverseMode) query() string {
-	return string(r)
 }
 
 //////////////////////////////////////////////////////////////////

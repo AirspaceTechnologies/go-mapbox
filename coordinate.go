@@ -6,8 +6,12 @@ import (
 )
 
 type Coordinate struct {
-	Lat float64
-	Lng float64
+	Lat float64 `json:"latitude"`
+	Lng float64 `json:"longitude"`
+}
+
+func (c Coordinate) IsZero() bool {
+	return c.Lat == 0 && c.Lng == 0
 }
 
 type Coordinates []Coordinate
@@ -33,4 +37,39 @@ func (c Coordinates) WGS84Format() string {
 
 	result := b.String()
 	return result[:len(result)-1] // remove trailing ';'
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+type ExtendedCoordinate struct {
+	Latitude       float64         `json:"latitude"`
+	Longitude      float64         `json:"longitude"`
+	Accuracy       string          `json:"accuracy"`
+	RoutablePoints []RoutablePoint `json:"routable_points,omitempty"`
+}
+
+type RoutablePoint struct {
+	Name      string
+	Latitude  float64
+	Longitude float64
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const (
+	GeometryLngIdx = 0
+	GeometryLatIdx = 1
+)
+
+type Geometry struct {
+	Coordinates []float64 `json:"coordinates"` // [lng, lat]
+	Type        string    `json:"type"`
+}
+
+func (g Geometry) Latitude() float64 {
+	return g.Coordinates[GeometryLatIdx]
+}
+
+func (g Geometry) Longitude() float64 {
+	return g.Coordinates[GeometryLngIdx]
 }

@@ -1,146 +1,167 @@
 package mapbox
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
 )
 
 const (
-	geocodePath = "geocoding"
+	GeocodingBatchEndpoint   = "/search/geocode/v6/batch"
+	GeocodingReverseEndpoint = "/search/geocode/v6/reverse"
+	GeocodingForwardEndpoint = "/search/geocode/v6/forward"
 )
 
 //////////////////////////////////////////////////////////////////
 
 type ReverseGeocodeRequest struct {
-	// required
-	Endpoint    Endpoint
-	Coordinates Coordinates
+	Coordinate
 
 	// optional
-	Country     string
-	Language    string
-	Limit       int
-	ReverseMode ReverseMode
-	Routing     bool
-	Types       Types
+	Country  string `json:"country,omitempty"`
+	Language string `json:"language,omitempty"`
+	Limit    int    `json:"limit,omitempty"`
+	Types    Types  `json:"types,omitempty"`
 }
 
-type ReverseGeocodeResponse struct {
-	Type        string     `json:"type"`
-	Query       []float64  `json:"query"`
-	Features    []*Feature `json:"features"`
-	Attribution string     `json:"attribution"`
-}
-
-//////////////////////////////////////////////////////////////////
+type ReverseGeocodeBatchRequest []ReverseGeocodeRequest
 
 type ForwardGeocodeRequest struct {
-	// required
-	Endpoint   Endpoint
-	SearchText string
-
-	// optional
+	SearchText   string
 	Autocomplete bool
 	BBox         BoundingBox
 	Country      string
-	FuzzyMatch   bool
 	Language     string
 	Limit        int
 	Proximity    Coordinate
-	Routing      bool
 	Types        Types
 }
 
-type ForwardGeocodeResponse struct {
+type GeocodeResponse struct {
 	Type        string     `json:"type"`
-	Query       []string   `json:"query"`
 	Features    []*Feature `json:"features"`
 	Attribution string     `json:"attribution"`
+}
+
+type GeocodeBatchResponse struct {
+	Batch []GeocodeResponse `json:"batch"`
 }
 
 //////////////////////////////////////////////////////////////////
 
 type Feature struct {
-	ID                string      `json:"id"`
-	Type              string      `json:"type"`
-	PlaceType         []string    `json:"place_type"`
-	Relevance         float64     `json:"relevance"`
-	Address           string      `json:"address,omitempty"`
-	Properties        *Properties `json:"properties,omitempty"`
-	Text              string      `json:"text"`
-	PlaceName         string      `json:"place_name"`
-	MatchingText      string      `json:"matching_text,omitempty"`
-	MatchingPlaceName string      `json:"matching_place_name,omitempty"`
-	Language          string      `json:"language,omitempty"`
-	Bbox              []float64   `json:"bbox,omitempty"`
-	Center            []float64   `json:"center"`
-	Geometry          *Geometry   `json:"geometry"`
-	Context           []*Context  `json:"context,omitempty"`
+	ID         string      `json:"id"`
+	Type       string      `json:"type"`
+	Geometry   *Geometry   `json:"geometry"` // The center of Properties.BoundingBox
+	Properties *Properties `json:"properties,omitempty"`
 }
 
-// TODO: need to properly unmarshal this data. (In some cases) Mapbox returns {} for properties which creates an empty struct
 type Properties struct {
-	Accuracy  string `json:"accuracy,omitempty"`
-	Address   string `json:"address,omitempty"`
-	Category  string `json:"category,omitempty"`
-	Maki      string `json:"maki,omitempty"`
-	Landmark  bool   `json:"landmark,omitempty"`
-	Wikidata  string `json:"wikidata,omitempty"`
-	ShortCode string `json:"short_code,omitempty"`
+	MapboxID       string             `json:"mapbox_id"`
+	FeatureType    Type               `json:"feature_type"`
+	Name           string             `json:"name"`
+	NamePreferred  string             `json:"name_preferred"`
+	PlaceFormatted string             `json:"place_formatted"`
+	FullAddress    string             `json:"full_address"`
+	Coordinates    ExtendedCoordinate `json:"coordinates"`
+	Context        map[Type]Context   `json:"context,omitempty"`
+	BoundingBox    []float64          `json:"bbox,omitempty"`
+	MatchCode      *MatchCode         `json:"match_code,omitempty"`
 }
 
-type Geometry struct {
-	Coordinates  []float64 `json:"coordinates"`
-	Type         string    `json:"type"`
-	Interpolated bool      `json:"interpolated,omitempty"`
-	Omitted      string    `json:"omitted,omitempty"`
-}
-
+// There are many different types of context objects, which are all mashed together
+// here.
+// https://docs.mapbox.com/api/search/geocoding/#the-context-object
 type Context struct {
-	ID        string `json:"id"`
-	Text      string `json:"text"`
-	Wikidata  string `json:"wikidata,omitempty"`
-	ShortCode string `json:"short_code,omitempty"`
+	// Always present
+	MapboxID string `json:"mapbox_id"`
+	Name     string `json:"name"`
+
+	// Optional but shared between many context types
+	WikidataID string `json:"wikidata_id,omitempty"`
+
+	// Region fields
+	RegionCode     string `json:"region_code,omitempty"`
+	RegionCodeFull string `json:"region_code_full,omitempty"`
+
+	// Address fields
+	AddressNumber string `json:"address_number,omitempty"`
+	StreetName    string `json:"street_name,omitempty"`
+
+	// Country fields
+	CountryCode       string `json:"country_code,omitempty"`
+	CountryCodeAlpha3 string `json:"country_code_alpha_3,omitempty"`
 }
+
+type MatchCode struct {
+	AddressNumber MatchCodeValue      `json:"address_number"`
+	Street        MatchCodeValue      `json:"street"`
+	Postcode      MatchCodeValue      `json:"postcode"`
+	Place         MatchCodeValue      `json:"place"`
+	Region        MatchCodeValue      `json:"region"`
+	Locality      MatchCodeValue      `json:"locality"`
+	Country       MatchCodeValue      `json:"country"`
+	Confidence    MatchCodeConfidence `json:"confidence"`
+}
+
+type MatchCodeConfidence string
+type MatchCodeValue string
+
+const (
+	MatchCodeConfidenceExact  MatchCodeConfidence = "exact"
+	MatchCodeConfidenceHigh   MatchCodeConfidence = "high"
+	MatchCodeConfidenceMedium MatchCodeConfidence = "medium"
+	MatchCodeConfidenceLow    MatchCodeConfidence = "low"
+
+	MatchCodeValueMatched       MatchCodeValue = "matched"
+	MatchCodeValueUnmatched     MatchCodeValue = "unmatched"
+	MatchCodeValueNotApplicable MatchCodeValue = "not_applicable"
+	MatchCodeValueInferred      MatchCodeValue = "inferred"
+	MatchCodeValuePlausible     MatchCodeValue = "plausible"
+)
 
 //////////////////////////////////////////////////////////////////
 
-// https://docs.mapbox.com/api/search/#forward-geocoding
-func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequest) (*ForwardGeocodeResponse, error) {
-	relPath := fmt.Sprintf("%v/%v/%v/%v.json", geocodePath, v5, req.Endpoint, url.PathEscape(req.SearchText))
-
+// https://docs.mapbox.com/api/search/geocoding/#forward-geocoding-with-search-text-input
+func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequest) (*GeocodeResponse, error) {
 	query := url.Values{}
+	query.Set("q", req.SearchText)
 	query.Set("access_token", client.apiKey)
 	query.Set("autocomplete", strconv.FormatBool(req.Autocomplete))
-	if req.BBox.Min.Lat != 0 && req.BBox.Min.Lng != 0 {
+
+	if !req.BBox.Min.IsZero() {
 		query.Set("bbox", req.BBox.query())
 	}
+
 	if req.Country != "" {
 		query.Set("country", req.Country)
 	}
-	query.Set("fuzzyMatch", strconv.FormatBool(req.FuzzyMatch))
+
 	if req.Language != "" {
 		query.Set("language", req.Language)
 	}
+
 	if req.Limit != 0 {
 		query.Set("limit", strconv.Itoa(req.Limit))
 	}
-	if req.Proximity.Lat != 0 {
+
+	if !req.Proximity.IsZero() {
 		query.Set("proximity", req.Proximity.WGS84Format())
 	}
-	query.Set("routing", strconv.FormatBool(req.Routing))
+
 	if len(req.Types) != 0 {
 		query.Set("types", req.Types.query())
 	}
 
-	apiResponse, err := client.get(ctx, relPath, query)
+	apiResponse, err := client.get(ctx, GeocodingForwardEndpoint, query)
 	if err != nil {
 		return nil, err
 	}
 
-	var response ForwardGeocodeResponse
+	var response GeocodeResponse
 	if err := client.handleResponse(apiResponse, &response, GeocodingRateLimit); err != nil {
 		return nil, err
 	}
@@ -148,28 +169,61 @@ func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequ
 	return &response, nil
 }
 
-// https://docs.mapbox.com/api/search/#reverse-geocoding
-func reverseGeocode(ctx context.Context, client *Client, req *ReverseGeocodeRequest) (*ReverseGeocodeResponse, error) {
-	relPath := fmt.Sprintf("%v/%v/%v/%v.json", geocodePath, v5, req.Endpoint, req.Coordinates.WGS84Format())
-
+// https://docs.mapbox.com/api/search/geocoding/#reverse-geocoding
+func reverseGeocode(ctx context.Context, client *Client, req *ReverseGeocodeRequest) (*GeocodeResponse, error) {
 	query := url.Values{}
 	query.Set("access_token", client.apiKey)
-	query.Set("country", req.Country)
-	query.Set("language", req.Language)
-	query.Set("limit", strconv.Itoa(req.Limit))
-	query.Set("reverseMode", req.ReverseMode.query())
-	query.Set("routing", strconv.FormatBool(req.Routing))
-	query.Set("types", req.Types.query())
+	query.Set("latitude", strconv.FormatFloat(req.Lat, 'f', -1, 64))
+	query.Set("longitude", strconv.FormatFloat(req.Lng, 'f', -1, 64))
 
-	apiResponse, err := client.get(ctx, relPath, query)
+	if req.Country != "" {
+		query.Set("country", req.Country)
+	}
+
+	if req.Language != "" {
+		query.Set("language", req.Language)
+	}
+
+	if req.Limit > 0 {
+		query.Set("limit", fmt.Sprintf("%v", req.Limit))
+	}
+
+	if len(req.Types) > 0 {
+		query.Set("types", req.Types.query())
+	}
+
+	apiResponse, err := client.get(ctx, GeocodingReverseEndpoint, query)
 	if err != nil {
 		return nil, err
 	}
 
-	var response ReverseGeocodeResponse
+	var response GeocodeResponse
 	if err := client.handleResponse(apiResponse, &response, GeocodingRateLimit); err != nil {
 		return nil, err
 	}
 
 	return &response, nil
+}
+
+// https://docs.mapbox.com/api/search/geocoding/#batch-geocoding, but only supports reverse
+func reverseGeocodeBatch(ctx context.Context, client *Client, req ReverseGeocodeBatchRequest) (*GeocodeBatchResponse, error) {
+	query := url.Values{}
+	query.Set("access_token", client.apiKey)
+
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	apiResponse, err := client.post(ctx, GeocodingBatchEndpoint, query, bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	var response *GeocodeBatchResponse
+	if err := client.handleResponse(apiResponse, &response, GeocodingRateLimit); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
