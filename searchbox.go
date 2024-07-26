@@ -22,9 +22,9 @@ type SearchboxReverseRequest struct {
 }
 
 type SearchboxReverseResponse struct {
-	Type        string     `json:"type"`
-	Features    []*Feature `json:"features"`
-	Attribution string     `json:"attribution"`
+	Type        string                     `json:"type"`
+	Features    []*SearchboxReverseFeature `json:"features"`
+	Attribution string                     `json:"attribution"`
 }
 
 type SearchboxReverseFeature struct {
@@ -35,23 +35,23 @@ type SearchboxReverseFeature struct {
 }
 
 type SearchboxReverseProperties struct {
-	MapboxID       string             `json:"mapbox_id"`
-	FeatureType    Type               `json:"feature_type"`
-	Name           string             `json:"name"`
-	NamePreferred  string             `json:"name_preferred"`
-	PlaceFormatted string             `json:"place_formatted"`
-	FullAddress    string             `json:"full_address"`
-	Coordinates    ExtendedCoordinate `json:"coordinates"`
-	Context        map[Type]Context   `json:"context,omitempty"`
-	BoundingBox    []float64          `json:"bbox,omitempty"`
-	Language       string             `json:"language"`
-	Maki           string             `json:"maki"`
-	POICategory    []string           `json:"poi_category"`
-	POICategoryIDs []string           `json:"poi_category_ids"`
-	Brand          string             `json:"brand"`
-	BrandID        string             `json:"brand_id"`
-	ExternalIDs    map[string]string  `json:"external_ids,omitempty"`
-	Metadata       map[string]string  `json:"metadata,omitempty"`
+	MapboxID       string                 `json:"mapbox_id"`
+	FeatureType    Type                   `json:"feature_type"`
+	Name           string                 `json:"name"`
+	NamePreferred  string                 `json:"name_preferred"`
+	PlaceFormatted string                 `json:"place_formatted"`
+	FullAddress    string                 `json:"full_address"`
+	Coordinates    ExtendedCoordinate     `json:"coordinates"`
+	Context        map[Type]Context       `json:"context,omitempty"`
+	BoundingBox    []float64              `json:"bbox,omitempty"`
+	Language       string                 `json:"language"`
+	Maki           string                 `json:"maki"`
+	POICategory    []string               `json:"poi_category"`
+	POICategoryIDs []string               `json:"poi_category_ids"`
+	Brand          string                 `json:"brand"`
+	BrandID        string                 `json:"brand_id"`
+	ExternalIDs    map[string]string      `json:"external_ids,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // https://docs.mapbox.com/api/search/search-box/#reverse-lookup
