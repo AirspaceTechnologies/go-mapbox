@@ -2,7 +2,6 @@ package mapbox
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -49,27 +48,10 @@ type SearchboxReverseProperties struct {
 	Maki           string                 `json:"maki"`
 	POICategory    []string               `json:"poi_category"`
 	POICategoryIDs []string               `json:"poi_category_ids"`
-	Brand          SearchboxBrand         `json:"brand"`
-	BrandID        SearchboxBrand         `json:"brand_id"`
+	Brand          []string               `json:"brand"`
+	BrandID        []string               `json:"brand_id"`
 	ExternalIDs    map[string]string      `json:"external_ids,omitempty"`
 	Metadata       map[string]interface{} `json:"metadata,omitempty"`
-}
-
-// SearchboxBrand unmarshals into a slice when either a string or slice are provided.
-// Replace with []string in the above properties if mapbox confirms that brand is
-// always a slice.
-type SearchboxBrand []string
-
-func (p *SearchboxBrand) UnmarshalJSON(data []byte) error {
-	switch {
-	case len(data) == 0 || string(data) == "null":
-		return nil
-	case data[0] == '[':
-		return json.Unmarshal(data, (*[]string)(p)) // unmarshal as standard []string
-	default:
-		*p = []string{string(data[:])} // assume it is a string
-	}
-	return nil
 }
 
 // https://docs.mapbox.com/api/search/search-box/#reverse-lookup

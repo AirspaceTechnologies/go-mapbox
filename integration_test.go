@@ -20,7 +20,7 @@ var (
 		POI        string
 		Query      string
 		QueryMatch string
-		Brand      SearchboxBrand
+		Brand      []string
 	}{
 		"Eiffel Tower": {
 			Lat:     48.858415953144025,
@@ -86,7 +86,7 @@ var (
 			Country: "United States",
 
 			POI:   "LIDS",
-			Brand: SearchboxBrand{"LIDS", "LIDS / Hat World"},
+			Brand: []string{"LIDS", "LIDS / Hat World"},
 
 			Query:      "3600 W Main St #350, Norman, OK 73072, United States",
 			QueryMatch: "Norman",
