@@ -48,8 +48,8 @@ type SearchboxReverseProperties struct {
 	Maki           string                 `json:"maki"`
 	POICategory    []string               `json:"poi_category"`
 	POICategoryIDs []string               `json:"poi_category_ids"`
-	Brand          string                 `json:"brand"`
-	BrandID        string                 `json:"brand_id"`
+	Brand          []string               `json:"brand"`
+	BrandID        []string               `json:"brand_id"`
 	ExternalIDs    map[string]string      `json:"external_ids,omitempty"`
 	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
