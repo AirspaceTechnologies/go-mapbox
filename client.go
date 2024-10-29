@@ -121,6 +121,13 @@ func (c *Client) ForwardGeocode(ctx context.Context, req *ForwardGeocodeRequest)
 	return forwardGeocode(ctx, c, req)
 }
 
+func (c *Client) ForwardGeocodeBatch(ctx context.Context, req ForwardGeocodeBatchRequest) (*GeocodeBatchResponse, error) {
+	if err := c.checkRateLimit(GeocodingRateLimit); err != nil {
+		return nil, err
+	}
+	return forwardGeocodeBatch(ctx, c, req)
+}
+
 func (c *Client) Directions(ctx context.Context, req *DirectionsRequest) (*DirectionsResponse, error) {
 	if err := c.checkRateLimit(DirectionsRateLimit); err != nil {
 		return nil, err

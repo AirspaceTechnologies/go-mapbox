@@ -27,6 +27,12 @@ type ReverseGeocodeRequest struct {
 	Types    Types  `json:"types,omitempty"`
 }
 
+type ForwardGeocodeBatchRequest []ForwardGeocodeRequest
+
+type ForwardGeocodeBatchResponse struct {
+	Batch []GeocodeResponse `json:"batch"`
+}
+
 type ReverseGeocodeBatchRequest []ReverseGeocodeRequest
 
 type ForwardGeocodeRequest struct {
@@ -38,6 +44,38 @@ type ForwardGeocodeRequest struct {
 	Limit        int
 	Proximity    Coordinate
 	Types        Types
+}
+
+func (r ForwardGeocodeRequest) MarshalJSON() ([]byte, error) {
+	type forwardGeocodeRequest struct {
+		SearchText   string       `json:"q,omitempty"`
+		Autocomplete bool         `json:"autocomplete,omitempty"`
+		BBox         *BoundingBox `json:"bbox,omitempty"`
+		Country      string       `json:"country,omitempty"`
+		Language     string       `json:"language,omitempty"`
+		Limit        int          `json:"limit,omitempty"`
+		Proximity    *Coordinate  `json:"proximity,omitempty"`
+		Types        []string     `json:"types,omitempty"`
+	}
+
+	var resp = forwardGeocodeRequest{
+		SearchText:   r.SearchText,
+		Autocomplete: r.Autocomplete,
+		Country:      r.Country,
+		Language:     r.Language,
+		Limit:        r.Limit,
+	}
+
+	if !r.BBox.Min.IsZero() && !r.BBox.Max.IsZero() {
+		resp.BBox = &r.BBox
+	}
+
+	types := r.Types.strings()
+	if len(types) > 0 {
+		resp.Types = types
+	}
+
+	return json.Marshal(resp)
 }
 
 type GeocodeResponse struct {
@@ -167,6 +205,29 @@ func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequ
 	}
 
 	return &response, nil
+}
+
+// https://docs.mapbox.com/api/search/geocoding/#batch-geocoding
+func forwardGeocodeBatch(ctx context.Context, client *Client, req ForwardGeocodeBatchRequest) (*GeocodeBatchResponse, error) {
+	query := url.Values{}
+	query.Set("access_token", client.apiKey)
+
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	apiResponse, err := client.post(ctx, GeocodingBatchEndpoint, query, bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	var response *GeocodeBatchResponse
+	if err := client.handleResponse(apiResponse, &response, GeocodingRateLimit); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 // https://docs.mapbox.com/api/search/geocoding/#reverse-geocoding
