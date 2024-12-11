@@ -37,6 +37,9 @@ type ReverseGeocodeBatchRequest []ReverseGeocodeRequest
 
 type ForwardGeocodeRequest struct {
 	SearchText   string
+	AddressLine1 string
+	Postcode     string
+	Place        string
 	Autocomplete bool
 	BBox         BoundingBox
 	Country      string
@@ -49,6 +52,9 @@ type ForwardGeocodeRequest struct {
 func (r ForwardGeocodeRequest) MarshalJSON() ([]byte, error) {
 	type forwardGeocodeRequest struct {
 		SearchText   string       `json:"q,omitempty"`
+		AddressLine1 string       `json:"address_line1,omitempty"`
+		Postcode     string       `json:"postcode,omitempty"`
+		Place        string       `json:"place,omitempty"`
 		Autocomplete bool         `json:"autocomplete,omitempty"`
 		BBox         *BoundingBox `json:"bbox,omitempty"`
 		Country      string       `json:"country,omitempty"`
@@ -60,6 +66,9 @@ func (r ForwardGeocodeRequest) MarshalJSON() ([]byte, error) {
 
 	var resp = forwardGeocodeRequest{
 		SearchText:   r.SearchText,
+		AddressLine1: r.AddressLine1,
+		Postcode:     r.Postcode,
+		Place:        r.Place,
 		Autocomplete: r.Autocomplete,
 		Country:      r.Country,
 		Language:     r.Language,
@@ -166,10 +175,21 @@ const (
 // https://docs.mapbox.com/api/search/geocoding/#forward-geocoding-with-search-text-input
 func forwardGeocode(ctx context.Context, client *Client, req *ForwardGeocodeRequest) (*GeocodeResponse, error) {
 	query := url.Values{}
-	query.Set("q", req.SearchText)
 	query.Set("access_token", client.apiKey)
 	query.Set("autocomplete", strconv.FormatBool(req.Autocomplete))
 
+	if req.SearchText != "" {
+		query.Set("q", req.SearchText)
+	}
+	if req.AddressLine1 != "" {
+		query.Set("address_line1", req.AddressLine1)
+	}
+	if req.Postcode != "" {
+		query.Set("postcode", req.Postcode)
+	}
+	if req.Place != "" {
+		query.Set("place", req.Place)
+	}
 	if !req.BBox.Min.IsZero() {
 		query.Set("bbox", req.BBox.query())
 	}
