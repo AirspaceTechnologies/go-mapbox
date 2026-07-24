@@ -100,11 +100,12 @@ type Component struct {
 
 // Intersection represents an intersection along a step.
 type Intersection struct {
-	Location []float64 `json:"location"`      // The location of the intersection [longitude, latitude].
-	Bearings []int     `json:"bearings"`      // The bearings at the intersection, in degrees.
-	Entry    []bool    `json:"entry"`         // A boolean flag indicating the availability of the corresponding bearing.
-	In       int       `json:"in,omitempty"`  // The index into the bearings/entry array that denotes the incoming bearing to the intersection.
-	Out      int       `json:"out,omitempty"` // The index into the bearings/entry array that denotes the outgoing bearing from the intersection.
+	Location   []float64 `json:"location"`      // The location of the intersection [longitude, latitude].
+	Bearings   []int     `json:"bearings"`      // The bearings at the intersection, in degrees.
+	Entry      []bool    `json:"entry"`         // A boolean flag indicating the availability of the corresponding bearing.
+	In         int       `json:"in,omitempty"`  // The index into the bearings/entry array that denotes the incoming bearing to the intersection.
+	Out        int       `json:"out,omitempty"` // The index into the bearings/entry array that denotes the outgoing bearing from the intersection.
+	AdminIndex int       `json:"admin_index"`   // The index into the leg's admins array of the administrative region containing this intersection.
 }
 
 type ViaWaypoint struct {
