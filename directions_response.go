@@ -100,12 +100,81 @@ type Component struct {
 
 // Intersection represents an intersection along a step.
 type Intersection struct {
-	Location   []float64 `json:"location"`      // The location of the intersection [longitude, latitude].
-	Bearings   []int     `json:"bearings"`      // The bearings at the intersection, in degrees.
-	Entry      []bool    `json:"entry"`         // A boolean flag indicating the availability of the corresponding bearing.
-	In         int       `json:"in,omitempty"`  // The index into the bearings/entry array that denotes the incoming bearing to the intersection.
-	Out        int       `json:"out,omitempty"` // The index into the bearings/entry array that denotes the outgoing bearing from the intersection.
-	AdminIndex int       `json:"admin_index"`   // The index into the leg's admins array of the administrative region containing this intersection.
+	Location      []float64 `json:"location"`       // The location of the intersection [longitude, latitude].
+	Bearings      []int     `json:"bearings"`       // The bearings at the intersection, in degrees.
+	Entry         []bool    `json:"entry"`          // A boolean flag indicating the availability of the corresponding bearing.
+	In            int       `json:"in,omitempty"`   // The index into the bearings/entry array that denotes the incoming bearing to the intersection.
+	Out           int       `json:"out,omitempty"`  // The index into the bearings/entry array that denotes the outgoing bearing from the intersection.
+	AdminIndex    int       `json:"admin_index"`    // The index into the leg's admins array of the administrative region containing this intersection.
+	GeometryIndex int       `json:"geometry_index"` // The index into the leg geometry of this intersection's coordinate.
+}
+
+// BorderCrossing is a country change along a leg, located at the first
+// intersection inside the new administrative region. Duration (seconds) and
+// Distance (meters) are cumulative from the start of the leg; they are exact
+// when the request included distance/duration annotations and fall back to
+// completed-step sums otherwise.
+type BorderCrossing struct {
+	Location []float64 // The location of the crossing [longitude, latitude].
+	From     Admin
+	To       Admin
+	Duration float64
+	Distance float64
+}
+
+// BorderCrossings locates administrative region changes along the leg's step
+// intersections. Legs traversing fewer than two regions produce none.
+func (l RouteLeg) BorderCrossings() []BorderCrossing {
+	if len(l.Admins) < 2 {
+		return nil
+	}
+
+	var crossings []BorderCrossing
+	var stepDuration, stepDistance float64
+	prevAdmin := -1
+
+	for _, step := range l.Steps {
+		for _, intersection := range step.Intersections {
+			idx := intersection.AdminIndex
+			if idx != prevAdmin && prevAdmin >= 0 && idx >= 0 && idx < len(l.Admins) && len(intersection.Location) >= 2 {
+				duration, distance, ok := l.annotationTotals(intersection.GeometryIndex)
+				if !ok {
+					duration, distance = stepDuration, stepDistance
+				}
+
+				crossings = append(crossings, BorderCrossing{
+					Location: intersection.Location,
+					From:     l.Admins[prevAdmin],
+					To:       l.Admins[idx],
+					Duration: duration,
+					Distance: distance,
+				})
+			}
+			prevAdmin = idx
+		}
+
+		stepDuration += step.Duration
+		stepDistance += step.Distance
+	}
+
+	return crossings
+}
+
+// annotationTotals sums the per-segment duration/distance annotations for the
+// leg geometry up to the given coordinate index. ok is false when the leg has
+// no annotations (not requested) or the index is out of range.
+func (l RouteLeg) annotationTotals(geometryIndex int) (duration, distance float64, ok bool) {
+	durations := l.Annotation.Duration
+	distances := l.Annotation.Distance
+	if geometryIndex <= 0 || geometryIndex > len(durations) || geometryIndex > len(distances) {
+		return 0, 0, false
+	}
+
+	for i := 0; i < geometryIndex; i++ {
+		duration += durations[i]
+		distance += distances[i]
+	}
+	return duration, distance, true
 }
 
 type ViaWaypoint struct {
