@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// TestIntegration_DirectionsBorderCrossings exercises real Mapbox responses to
+// TestIntegration_DirectionsAdminCrossings exercises real Mapbox responses to
 // verify admins, admin_index, geometry_index, and annotations arrive as
-// expected and that RouteLeg.BorderCrossings locates a plausible crossing.
-func TestIntegration_DirectionsBorderCrossings(t *testing.T) {
+// expected and that RouteLeg.AdminCrossings locates a plausible crossing.
+func TestIntegration_DirectionsAdminCrossings(t *testing.T) {
 	key := os.Getenv("API_KEY")
 	if key == "" {
 		t.Fatalf("missing Mapbox API key")
@@ -72,9 +72,9 @@ func TestIntegration_DirectionsBorderCrossings(t *testing.T) {
 				t.Errorf("expected duration/distance annotations, got %v/%v", len(leg.Annotation.Duration), len(leg.Annotation.Distance))
 			}
 
-			crossings := leg.BorderCrossings()
+			crossings := leg.AdminCrossings()
 			if len(crossings) == 0 {
-				t.Fatalf("expected at least one border crossing")
+				t.Fatalf("expected at least one admin crossing")
 			}
 
 			c := crossings[0]

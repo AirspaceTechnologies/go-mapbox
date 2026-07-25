@@ -109,12 +109,14 @@ type Intersection struct {
 	GeometryIndex int       `json:"geometry_index"` // The index into the leg geometry of this intersection's coordinate.
 }
 
-// BorderCrossing is a country change along a leg, located at the first
-// intersection inside the new administrative region. Duration (seconds) and
-// Distance (meters) are cumulative from the start of the leg; they are exact
-// when the request included distance/duration annotations and fall back to
-// completed-step sums otherwise.
-type BorderCrossing struct {
+// AdminCrossing is an administrative boundary change along a leg, located at
+// the first intersection inside the new region. Mapbox emits one admins entry
+// per boundary traversed, so consecutive entries can share a country (e.g.
+// state lines) — compare From/To ISO codes to detect country changes. Duration
+// (seconds) and Distance (meters) are cumulative from the start of the leg;
+// they are exact when the request included distance/duration annotations and
+// fall back to completed-step sums otherwise.
+type AdminCrossing struct {
 	Location []float64 // The location of the crossing [longitude, latitude].
 	From     Admin
 	To       Admin
@@ -122,14 +124,14 @@ type BorderCrossing struct {
 	Distance float64
 }
 
-// BorderCrossings locates administrative region changes along the leg's step
+// AdminCrossings locates administrative region changes along the leg's step
 // intersections. Legs traversing fewer than two regions produce none.
-func (l RouteLeg) BorderCrossings() []BorderCrossing {
+func (l RouteLeg) AdminCrossings() []AdminCrossing {
 	if len(l.Admins) < 2 {
 		return nil
 	}
 
-	var crossings []BorderCrossing
+	var crossings []AdminCrossing
 	var stepDuration, stepDistance float64
 	prevAdmin := -1
 
@@ -142,7 +144,7 @@ func (l RouteLeg) BorderCrossings() []BorderCrossing {
 					duration, distance = stepDuration, stepDistance
 				}
 
-				crossings = append(crossings, BorderCrossing{
+				crossings = append(crossings, AdminCrossing{
 					Location: intersection.Location,
 					From:     l.Admins[prevAdmin],
 					To:       l.Admins[idx],

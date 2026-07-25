@@ -56,14 +56,41 @@ func TestDirectionsResponseUnmarshalAdmins(t *testing.T) {
 	}
 }
 
-func TestRouteLegBorderCrossings(t *testing.T) {
+func TestRouteLegAdminCrossings(t *testing.T) {
 	de := Admin{ISO_3166_1: "DE", ISO_3166_1_alpha3: "DEU"}
 	fr := Admin{ISO_3166_1: "FR", ISO_3166_1_alpha3: "FRA"}
+	us := Admin{ISO_3166_1: "US", ISO_3166_1_alpha3: "USA"}
 
 	cases := map[string]struct {
 		leg      RouteLeg
-		expected []BorderCrossing
+		expected []AdminCrossing
 	}{
+		"same-country admin change is still reported": {
+			leg: RouteLeg{
+				Admins: []Admin{us, us},
+				Steps: []Step{
+					{
+						Duration: 300, Distance: 3000,
+						Intersections: []Intersection{
+							{Location: []float64{-115.4, 35.6}, AdminIndex: 0},
+						},
+					},
+					{
+						Duration: 700, Distance: 7000,
+						Intersections: []Intersection{
+							{Location: []float64{-114.0, 36.8}, AdminIndex: 1},
+						},
+					},
+				},
+			},
+			expected: []AdminCrossing{{
+				Location: []float64{-114.0, 36.8},
+				From:     us,
+				To:       us,
+				Duration: 300,
+				Distance: 3000,
+			}},
+		},
 		"single admin produces none": {
 			leg: RouteLeg{
 				Admins: []Admin{de},
@@ -97,7 +124,7 @@ func TestRouteLegBorderCrossings(t *testing.T) {
 					},
 				},
 			},
-			expected: []BorderCrossing{{
+			expected: []AdminCrossing{{
 				Location: []float64{8.1, 48.95},
 				From:     de,
 				To:       fr,
@@ -123,7 +150,7 @@ func TestRouteLegBorderCrossings(t *testing.T) {
 					},
 				},
 			},
-			expected: []BorderCrossing{{
+			expected: []AdminCrossing{{
 				Location: []float64{8.1, 48.95},
 				From:     de,
 				To:       fr,
@@ -148,7 +175,7 @@ func TestRouteLegBorderCrossings(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			got := tc.leg.BorderCrossings()
+			got := tc.leg.AdminCrossings()
 
 			if len(got) != len(tc.expected) {
 				t.Fatalf("expected %v crossings, got %v", len(tc.expected), len(got))
